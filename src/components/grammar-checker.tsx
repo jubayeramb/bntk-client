@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { tokenizeToWords } from "@bntk/tokenization";
+import { transliterate } from "@bntk/transliteration";
+import { stemWord, stemWords } from "@bntk/stemming";
 import {
   Tabs,
   TabsContent,
@@ -16,6 +19,7 @@ import TokenizationResults from "@bntk/components/tokenization-results";
 import StemmingResults from "@bntk/components/stemming-results";
 import NerResults from "@bntk/components/ner-results";
 import PosResults from "@bntk/components/pos-results";
+import TransliterationResults from "@bntk/components/transliteration-results";
 import {
   Sparkles,
   Wand2,
@@ -27,6 +31,7 @@ import {
   Copy,
   RefreshCw,
   HelpCircle,
+  Languages,
 } from "lucide-react";
 import {
   Tooltip,
@@ -47,14 +52,15 @@ import {
 // Sample texts for each tab
 const sampleTexts = {
   grammar:
-    "i am going to the store and i dont know what to buy. its going to be a long day.",
+    "ami ajke bazar jabo ebong ki kinbo jani na. eta ekta lomba din hobe.",
   spelling:
-    "I recieved your mesage about the accomodation. I will definately respond tommorow.",
+    "Ami tomader bashay jabo. Kintu ami janina kothay tomar basha. Tumi ki amake thikana dite parbe?",
   tokenization:
-    "Natural language processing (NLP) is a subfield of linguistics, computer science, and artificial intelligence.",
-  stemming: "running jumps connected fishing easier studies computerized",
-  ner: "John Smith works at Apple Inc. in New York City. He visited Paris last summer.",
-  pos: "The quick brown fox jumps over the lazy dog.",
+    "আমি বাংলাদেশে থাকি। আমার দেশের নাম বাংলাদেশ। এটি একটি সুন্দর দেশ।",
+  stemming: "খেলছি পড়েছি লিখেছি হাঁটছি দেখছি শুনছি বলছি",
+  ner: "শেখ হাসিনা ঢাকা বিশ্ববিদ্যালয়ে একটি বক্তৃতা দিয়েছেন। তিনি বাংলাদেশ সরকারের প্রধানমন্ত্রী।",
+  pos: "সুন্দর লাল গোলাপটি বাগানে ফুটে আছে।",
+  transliteration: "amar sOnar bangla ami tOmay bhalObasi.",
 };
 
 export default function GrammarChecker() {
@@ -151,7 +157,7 @@ export default function GrammarChecker() {
           break;
         case "tokenization":
           mockResults = {
-            tokens: text.split(/\s+/).filter((t) => t.length > 0),
+            tokens: tokenizeToWords(text),
           };
           break;
         case "stemming":
@@ -161,7 +167,7 @@ export default function GrammarChecker() {
               .filter((t) => t.length > 0)
               .map((word) => ({
                 original: word,
-                stem: word.replace(/ing$|ed$|s$|es$|ly$|ized$/, ""),
+                stem: stemWord(word),
               })),
           };
           break;
@@ -216,6 +222,11 @@ export default function GrammarChecker() {
               }),
           };
           break;
+        case "transliteration":
+          mockResults = {
+            transliterated: transliterate(text),
+          };
+          break;
       }
 
       setResults(mockResults);
@@ -244,6 +255,8 @@ export default function GrammarChecker() {
         return <NerResults results={results} text={text} />;
       case "pos":
         return <PosResults results={results} />;
+      case "transliteration":
+        return <TransliterationResults results={results} />;
       default:
         return null;
     }
@@ -263,6 +276,8 @@ export default function GrammarChecker() {
         return <User className="h-4 w-4 mr-1" />;
       case "pos":
         return <AlignJustify className="h-4 w-4 mr-1" />;
+      case "transliteration":
+        return <Languages className="h-4 w-4 mr-1" />;
       default:
         return null;
     }
@@ -282,6 +297,8 @@ export default function GrammarChecker() {
         return "Identifies and classifies named entities like people, organizations, and locations.";
       case "pos":
         return "Tags words with their part of speech (noun, verb, adjective, etc.).";
+      case "transliteration":
+        return "Converts English text to Bangla script.";
       default:
         return "";
     }
@@ -434,6 +451,8 @@ export default function GrammarChecker() {
                       ? "find word stems"
                       : tab === "ner"
                       ? "identify named entities"
+                      : tab === "transliteration"
+                      ? "transliterate"
                       : "analyze parts of speech"
                   }...`}
                 />
@@ -508,6 +527,8 @@ export default function GrammarChecker() {
                             ? "Word Stems"
                             : activeTab === "ner"
                             ? "Named Entities"
+                            : activeTab === "transliteration"
+                            ? "Transliteration"
                             : "Parts of Speech"
                         }`
                       )}
