@@ -9,6 +9,11 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@bntk/ner": "^0.0.1",
+    "@bntk/pos": "^0.0.1",
+    "@bntk/stemming": "^0.0.1",
+    "@bntk/tokenization": "^0.0.3",
+    "@bntk/transliteration": "^0.0.0",
     "@radix-ui/react-dialog": "^1.1.6",
     "@radix-ui/react-slot": "^1.1.2",
     "@radix-ui/react-tabs": "^1.1.3",
