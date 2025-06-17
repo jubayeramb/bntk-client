@@ -1,14 +1,26 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: "export",
+  output: "export", // Removed to allow API routes
   basePath: process.env.NEXT_PUBLIC_BASE_PATH || "",
-  serverExternalPackages: ["@electric-sql/pglite"],
-  webpack: (config) => {
+  webpack: (config, { isServer }) => {
     config.module.rules.push({
       test: /\.sql$/,
       use: "raw-loader",
     });
+
+    // Handle Node.js modules that aren't compatible with client-side bundling
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        dns: false,
+        tls: false,
+        crypto: false,
+      };
+    }
+
     return config;
   },
 };

@@ -1,15 +1,13 @@
 import { getBasePath } from "@bntk/helpers/basePath";
-import { PGliteWithLive } from "@electric-sql/pglite/live";
+import { Pool } from "pg";
 
-export async function seedDatabase(dbClient: PGliteWithLive, cb?: () => void) {
+export async function seedDatabase(dbClient: Pool, cb?: () => void) {
   try {
     // Check if data exists
-    const wordsResult = await dbClient.query<{ count: string }>(
-      "SELECT COUNT(*) FROM words"
-    );
+    const wordsResult = await dbClient.query("SELECT COUNT(*) FROM words");
     const wordsCount = parseInt(wordsResult.rows[0].count);
 
-    const romanized_wordsResult = await dbClient.query<{ count: string }>(
+    const romanized_wordsResult = await dbClient.query(
       "SELECT COUNT(*) FROM romanized_words"
     );
     const romanized_wordsCount = parseInt(romanized_wordsResult.rows[0].count);
@@ -17,37 +15,68 @@ export async function seedDatabase(dbClient: PGliteWithLive, cb?: () => void) {
     cb?.();
 
     console.log("Seeding database...");
-    // Fetch the CSV file from the public directory
+
+    // Since we're using a hosted PostgreSQL, we'll need to insert data via SQL queries
+    // instead of using the COPY command with blob files
     if (wordsCount === 0) {
-      const blob = await fetch(getBasePath() + "/words.csv").then((res) =>
-        res.blob()
-      );
+      const response = await fetch(getBasePath() + "/words.csv");
+      const csvText = await response.text();
+      const lines = csvText.split("\n").slice(1); // Skip header
+
       cb?.();
 
-      await dbClient.query(
-        "COPY words FROM '/dev/blob' WITH (FORMAT csv, HEADER);",
-        [],
-        {
-          blob: blob,
+      // Insert words in batches
+      const batchSize = 1000;
+      for (let i = 0; i < lines.length; i += batchSize) {
+        const batch = lines
+          .slice(i, i + batchSize)
+          .filter((line) => line.trim());
+        if (batch.length > 0) {
+          const values = batch
+            .map((line, index) => `($${index + 1})`)
+            .join(",");
+          const params = batch.map(
+            (line) => line.split(",")[1]?.replace(/"/g, "") || line.trim()
+          );
+
+          await dbClient.query(
+            `INSERT INTO words (value) VALUES ${values}`,
+            params
+          );
         }
-      );
+      }
       console.log("Words table seeded successfully");
       cb?.();
     }
 
     if (romanized_wordsCount === 0) {
-      const blob = await fetch(getBasePath() + "/romanized_words.csv").then(
-        (res) => res.blob()
-      );
+      const response = await fetch(getBasePath() + "/romanized_words.csv");
+      const csvText = await response.text();
+      const lines = csvText.split("\n").slice(1); // Skip header
+
       cb?.();
 
-      await dbClient.query(
-        "COPY romanized_words FROM '/dev/blob' WITH (FORMAT csv, HEADER);",
-        [],
-        {
-          blob: blob,
+      // Insert romanized words in batches
+      const batchSize = 1000;
+      for (let i = 0; i < lines.length; i += batchSize) {
+        const batch = lines
+          .slice(i, i + batchSize)
+          .filter((line) => line.trim());
+        if (batch.length > 0) {
+          const values = batch
+            .map((_, index) => `($${index * 2 + 1}, $${index * 2 + 2})`)
+            .join(",");
+          const params = batch.flatMap((line) => {
+            const parts = line.split(",");
+            return [parseInt(parts[0]) || 0, parts[1]?.replace(/"/g, "") || ""];
+          });
+
+          await dbClient.query(
+            `INSERT INTO romanized_words (word_id, value) VALUES ${values}`,
+            params
+          );
         }
-      );
+      }
       console.log("Romanized words table seeded successfully");
       cb?.();
     }
