@@ -11,18 +11,11 @@ export const findSimilarWords = async (db: Pool, text: string) => {
   // Step 1: Tokenize the input text into words
   const words = tokenizeToWords(text);
 
-  console.log("🚀 ~ findSimilarWords ~ tokenized words:", words);
-
   // Step 2: Generate romanized version for each word
   const wordsWithRomanized: WordWithRomanized[] = words.map((word) => ({
     bangla: word,
     romanized: transliterate(word, { mode: "orva" }),
   }));
-
-  console.log(
-    "🚀 ~ constwordsWithRomanized ~ wordsWithRomanized:",
-    wordsWithRomanized
-  );
 
   try {
     // Create values string for the input CTE
@@ -33,10 +26,6 @@ export const findSimilarWords = async (db: Pool, text: string) => {
     // Create params array
     const params = wordsWithRomanized.flatMap((w) => [w.bangla, w.romanized]);
 
-    console.log(
-      "🚀 ~ findSimilarWords ~ words with romanized flat params:",
-      params
-    );
     console.time("findSimilarWords Query Execution");
 
     const candidates = await db.query(
@@ -131,7 +120,7 @@ export const findSimilarWords = async (db: Pool, text: string) => {
     );
 
     console.timeEnd("findSimilarWords Query Execution");
-    console.log("🚀 ~ findSimilarWords ~ candidates:", candidates); // Return array of suggestions
+
     return candidates.rows.map(
       (row: {
         original_word: string;
