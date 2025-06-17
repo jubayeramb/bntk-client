@@ -61,7 +61,6 @@ export default function GrammarChecker() {
   const [text, setText] = useState("");
   const [activeTab, setActiveTab] = useState("spelling");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analyzeProgress, setAnalyzeProgress] = useState(0);
   const [results, setResults] = useState<CheckResults | null>(null);
   const [wordCount, setWordCount] = useState({ words: 0, chars: 0 });
 
@@ -89,7 +88,6 @@ export default function GrammarChecker() {
 
     try {
       setIsAnalyzing(true);
-      setAnalyzeProgress(0);
       let mockResults: CheckResults = {
         misspellings: [],
       };
@@ -403,7 +401,7 @@ export default function GrammarChecker() {
                               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                             ></path>
                           </svg>
-                          Analyzing... {analyzeProgress}%
+                          Analyzing...
                         </span>
                       ) : (
                         `Check ${tab}`

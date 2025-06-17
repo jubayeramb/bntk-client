@@ -1,7 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: "export", // Removed to allow API routes
   basePath: process.env.NEXT_PUBLIC_BASE_PATH || "",
   webpack: (config, { isServer }) => {
     config.module.rules.push({
