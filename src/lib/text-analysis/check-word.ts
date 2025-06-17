@@ -1,7 +1,7 @@
-import type { PGliteWithLive } from "@electric-sql/pglite/live";
+import type { Pool } from "pg";
 
-export const checkWord = async (db: PGliteWithLive, word: string) => {
-  const result = await db.query<{ exists: boolean }>(
+export const checkWord = async (db: Pool, word: string) => {
+  const result = await db.query(
     `
     SELECT EXISTS (
       SELECT 1 

@@ -27,8 +27,6 @@ import {
   TooltipTrigger,
 } from "@bntk/components/ui/tooltip";
 import { SampleTexts } from "@bntk/consts/sample-text";
-import { findSimilarWords } from "@bntk/lib/text-analysis/find-simmilar-words";
-import { usePGlite } from "@electric-sql/pglite-react";
 import {
   Check,
   Copy,
@@ -66,7 +64,6 @@ export default function GrammarChecker() {
   const [analyzeProgress, setAnalyzeProgress] = useState(0);
   const [results, setResults] = useState<CheckResults | null>(null);
   const [wordCount, setWordCount] = useState({ words: 0, chars: 0 });
-  const db = usePGlite();
 
   const handleTextChange = (value: string) => {
     setText(value);
@@ -96,10 +93,21 @@ export default function GrammarChecker() {
       let mockResults: CheckResults = {
         misspellings: [],
       };
-
       switch (activeTab) {
         case "spelling": {
-          const suggestions = await findSimilarWords(db, text);
+          const response = await fetch("/api/similar-words", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ text }),
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to fetch similar words");
+          }
+
+          const { results: suggestions } = await response.json();
 
           // Transform suggestions into the format expected by SpellCheckResults
           const misspellings = suggestions.reduce(
@@ -109,7 +117,13 @@ export default function GrammarChecker() {
                 suggestions: string[];
                 index: number;
               }>,
-              suggestion
+              suggestion: {
+                original: string;
+                suggestion: string;
+                matchType: string;
+                score: number;
+                rank: number;
+              }
             ) => {
               const existingWord = acc.find(
                 (m) => m.word === suggestion.original

@@ -1,23 +1,13 @@
-import type { PGliteWithLive } from "@electric-sql/pglite/live";
+import type { Pool } from "pg";
 import { tokenizeToWords } from "@bntk/tokenization";
 import { transliterate } from "@bntk/transliteration";
-
-interface WordSimilarity {
-  value: string;
-  original_word: string;
-  suggestion: string;
-  match_type: "exact_bangla" | "exact_romanized" | "trigram_romanized";
-  match_priority: number;
-  score: number;
-  suggestion_rank: number;
-}
 
 interface WordWithRomanized {
   bangla: string;
   romanized: string;
 }
 
-export const findSimilarWords = async (db: PGliteWithLive, text: string) => {
+export const findSimilarWords = async (db: Pool, text: string) => {
   // Step 1: Tokenize the input text into words
   const words = tokenizeToWords(text);
 
@@ -47,10 +37,9 @@ export const findSimilarWords = async (db: PGliteWithLive, text: string) => {
       "🚀 ~ findSimilarWords ~ words with romanized flat params:",
       params
     );
-
     console.time("findSimilarWords Query Execution");
 
-    const candidates = await db.query<WordSimilarity>(
+    const candidates = await db.query(
       `
       WITH input_words (bangla_word, romanized_word) AS (
         VALUES ${valuesStr}
@@ -142,17 +131,22 @@ export const findSimilarWords = async (db: PGliteWithLive, text: string) => {
     );
 
     console.timeEnd("findSimilarWords Query Execution");
-
-    console.log("🚀 ~ findSimilarWords ~ candidates:", candidates);
-
-    // Return array of suggestions
-    return candidates.rows.map((row) => ({
-      original: row.original_word,
-      suggestion: row.suggestion,
-      matchType: row.match_type,
-      score: row.score,
-      rank: row.suggestion_rank,
-    }));
+    console.log("🚀 ~ findSimilarWords ~ candidates:", candidates); // Return array of suggestions
+    return candidates.rows.map(
+      (row: {
+        original_word: string;
+        suggestion: string;
+        match_type: string;
+        score: number;
+        suggestion_rank: number;
+      }) => ({
+        original: row.original_word,
+        suggestion: row.suggestion,
+        matchType: row.match_type,
+        score: row.score,
+        rank: row.suggestion_rank,
+      })
+    );
   } catch (error) {
     console.log("Error finding similar words:", error);
     return [];

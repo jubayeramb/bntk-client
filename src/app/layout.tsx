@@ -1,7 +1,6 @@
 import { Header } from "@bntk/components/header";
 import { ThemeProvider } from "@bntk/components/theme-provider";
 import "./globals.css";
-import { PGLiteContextProvider } from "@bntk/context/pglite-context-provider";
 
 export const metadata = {
   title: "Bangla Toolkit",
@@ -15,12 +14,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      {" "}
       <body>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <PGLiteContextProvider>
-            <Header />
-            <main className="pt-20 mt-20 px-2">{children}</main>
-          </PGLiteContextProvider>
+          <Header />
+          <main className="pt-20 mt-20 px-2">{children}</main>
         </ThemeProvider>
       </body>
     </html>
