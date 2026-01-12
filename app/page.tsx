@@ -1,5 +1,5 @@
-import SpellChecker from "./components/SpellChecker";
+import { SpellCheckerClient } from "./components/SpellCheckerClient";
 
 export default function Home() {
-  return <SpellChecker />;
+  return <SpellCheckerClient />;
 }
