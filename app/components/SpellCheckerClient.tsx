@@ -2,8 +2,14 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import Link from "next/link";
+import { transliterate } from "@bntk/transliteration";
 import { Logo } from "./Logo";
 import { ThemeToggle } from "./ThemeToggle";
+
+// Check if a string contains only Latin characters (for Avro transliteration)
+const isLatinText = (text: string): boolean => {
+  return /^[a-zA-Z]+$/.test(text);
+};
 
 interface WordSuggestion {
   id: number;
@@ -46,6 +52,8 @@ export function SpellCheckerClient() {
   );
   const [stats, setStats] = useState({ total: 0, incorrect: 0 });
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const checkSpelling = useCallback(async (inputText: string) => {
     if (!inputText.trim()) {
@@ -92,6 +100,54 @@ export function SpellCheckerClient() {
     }, 500);
   };
 
+  // Handle space key for Avro transliteration
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === " " || e.key === "Enter") {
+      const textarea = textareaRef.current;
+      if (!textarea) return;
+
+      const cursorPos = textarea.selectionStart;
+      const textBeforeCursor = text.slice(0, cursorPos);
+
+      // Find the last word before cursor
+      const words = textBeforeCursor.split(/\s+/);
+      const lastWord = words[words.length - 1];
+
+      // Only transliterate if the last word is Latin characters
+      if (lastWord && isLatinText(lastWord)) {
+        e.preventDefault();
+
+        const transliterated = transliterate(lastWord, { mode: "avro" });
+        const textAfterCursor = text.slice(cursorPos);
+        const textBeforeLastWord = textBeforeCursor.slice(
+          0,
+          textBeforeCursor.length - lastWord.length
+        );
+
+        const separator = e.key === "Enter" ? "\n" : " ";
+        const newText =
+          textBeforeLastWord + transliterated + separator + textAfterCursor;
+
+        setText(newText);
+
+        // Set cursor position after the transliterated word + space
+        const newCursorPos =
+          textBeforeLastWord.length + transliterated.length + 1;
+        setTimeout(() => {
+          textarea.setSelectionRange(newCursorPos, newCursorPos);
+        }, 0);
+
+        // Trigger spell check
+        if (debounceRef.current) {
+          clearTimeout(debounceRef.current);
+        }
+        debounceRef.current = setTimeout(() => {
+          checkSpelling(newText);
+        }, 500);
+      }
+    }
+  };
+
   const applySuggestion = (original: string, replacement: string) => {
     const newText = text.replace(new RegExp(original, "g"), replacement);
     setText(newText);
@@ -121,7 +177,7 @@ export function SpellCheckerClient() {
               <span className="text-xl md:text-2xl font-bold bg-gradient-to-r from-emerald-500 to-cyan-500 bg-clip-text text-transparent leading-tight">
                 বানান
               </span>
-              <span className="text-[10px] font-medium text-emerald-500 uppercase tracking-wide md:bg-emerald-500/10 md:px-2 md:py-1 md:rounded-full">
+              <span className="text-[10px] font-medium text-emerald-600 uppercase tracking-wide md:bg-emerald-500/10 md:px-2 md:py-1 md:rounded-full">
                 Spell Checker
               </span>
             </div>
@@ -170,9 +226,11 @@ export function SpellCheckerClient() {
         {/* Editor Body */}
         <div className="relative flex-1 flex flex-col overflow-hidden">
           <textarea
+            ref={textareaRef}
             value={text}
             onChange={handleTextChange}
-            placeholder="এখানে বাংলায় লিখুন..."
+            onKeyDown={handleKeyDown}
+            placeholder="এখানে লিখুন..."
             className="w-full flex-1 p-6 bg-transparent border-none outline-none resize-none text-2xl leading-loose text-[var(--text-primary)] font-[family-name:var(--font-sans)] caret-blue-400 overflow-y-auto placeholder:text-[var(--text-muted)] max-md:p-4 max-md:text-xl"
             spellCheck={false}
           />
