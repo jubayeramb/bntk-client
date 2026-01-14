@@ -9,10 +9,10 @@
 
 /* Light Theme (Default) */
 :root {
-  /* Background colors */
-  --bg-primary: #f8fafc;
-  --bg-secondary: #f1f5f9;
-  --bg-tertiary: #e2e8f0;
+  /* Background colors - Deeper, richer tones */
+  --bg-primary: #eae9e4;
+  --bg-secondary: #e0dfd9;
+  --bg-tertiary: #d5d4ce;
 
   /* Accent colors - Vibrant emerald and cyan */
   --accent-primary: #10b981;
@@ -20,9 +20,9 @@
   --accent-tertiary: #8b5cf6;
 
   /* Text colors */
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #94a3b8;
+  --text-primary: #1a1a1a;
+  --text-secondary: #525252;
+  --text-muted: #8b8b8b;
 
   /* Semantic colors */
   --color-error: #dc2626;
@@ -32,17 +32,17 @@
 
   /* Gradients */
   --gradient-primary: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
-  --gradient-secondary: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
-  --gradient-page: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  --gradient-secondary: linear-gradient(135deg, #eeede8 0%, #e5e4df 100%);
+  --gradient-page: linear-gradient(135deg, #f5f5f0 0%, #eeede8 100%);
   --gradient-glow: radial-gradient(
     circle,
-    rgba(16, 185, 129, 0.1) 0%,
+    rgba(16, 185, 129, 0.15) 0%,
     transparent 70%
   );
 
   /* Borders and overlays */
-  --border-color: rgba(0, 0, 0, 0.08);
-  --overlay-color: rgba(0, 0, 0, 0.03);
+  --border-color: rgba(0, 0, 0, 0.1);
+  --overlay-color: rgba(0, 0, 0, 0.04);
 
   /* Spacing & sizing */
   --radius-sm: 0.375rem;
