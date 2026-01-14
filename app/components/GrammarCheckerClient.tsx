@@ -5,52 +5,49 @@ import Link from "next/link";
 import { Logo } from "./Logo";
 import { ThemeToggle } from "./ThemeToggle";
 
-interface WordSuggestion {
-  id: number;
-  value: string;
-  romanized: string;
-  similarity: number;
-  frequency?: number;
+interface WordPairSuggestion {
+  nextWord: string;
+  occurance: number;
 }
 
-interface SpellCheckResult {
-  word: string;
+interface GrammarCheckResult {
+  prevWord: string;
+  currentWord: string;
+  position: number;
   isCorrect: boolean;
-  suggestions: WordSuggestion[];
-  romanized: string;
-  isRareWord?: boolean;
+  currentOccurance: number;
+  suggestions: WordPairSuggestion[];
 }
 
-interface SpellCheckResponse {
+interface GrammarCheckResponse {
   success: boolean;
-  results: SpellCheckResult[];
+  results: GrammarCheckResult[];
   totalWords: number;
-  incorrectWords: number;
-  rareWords?: number;
+  totalPairs: number;
+  issuesFound: number;
 }
 
-function formatFrequency(freq: number | undefined): string {
-  if (!freq) return "";
-  if (freq >= 1000000) return `${(freq / 1000000).toFixed(1)}M`;
-  if (freq >= 1000) return `${(freq / 1000).toFixed(1)}K`;
-  return String(freq);
+function formatOccurance(count: number): string {
+  if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M`;
+  if (count >= 1000) return `${(count / 1000).toFixed(1)}K`;
+  return String(count);
 }
 
-export function SpellCheckerClient() {
+export function GrammarCheckerClient() {
   const [text, setText] = useState("");
-  const [results, setResults] = useState<SpellCheckResult[]>([]);
+  const [results, setResults] = useState<GrammarCheckResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedWord, setSelectedWord] = useState<SpellCheckResult | null>(
+  const [selectedIssue, setSelectedIssue] = useState<GrammarCheckResult | null>(
     null
   );
-  const [stats, setStats] = useState({ total: 0, incorrect: 0 });
+  const [stats, setStats] = useState({ total: 0, pairs: 0, issues: 0 });
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
-  const checkSpelling = useCallback(async (inputText: string) => {
+  const checkGrammar = useCallback(async (inputText: string) => {
     if (!inputText.trim()) {
       setResults([]);
-      setStats({ total: 0, incorrect: 0 });
+      setStats({ total: 0, pairs: 0, issues: 0 });
       return;
     }
 
@@ -58,22 +55,26 @@ export function SpellCheckerClient() {
     setError(null);
 
     try {
-      const response = await fetch("/api/spell-check", {
+      const response = await fetch("/api/grammar-check", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: inputText }),
       });
 
-      const data: SpellCheckResponse = await response.json();
+      const data: GrammarCheckResponse = await response.json();
 
       if (!response.ok) {
         throw new Error(data.success === false ? "API error" : "Unknown error");
       }
 
       setResults(data.results);
-      setStats({ total: data.totalWords, incorrect: data.incorrectWords });
+      setStats({
+        total: data.totalWords,
+        pairs: data.totalPairs,
+        issues: data.issuesFound,
+      });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to check spelling");
+      setError(err instanceof Error ? err.message : "Failed to check grammar");
     } finally {
       setIsLoading(false);
     }
@@ -88,15 +89,15 @@ export function SpellCheckerClient() {
     }
 
     debounceRef.current = setTimeout(() => {
-      checkSpelling(newText);
+      checkGrammar(newText);
     }, 500);
   };
 
   const applySuggestion = (original: string, replacement: string) => {
     const newText = text.replace(new RegExp(original, "g"), replacement);
     setText(newText);
-    setSelectedWord(null);
-    checkSpelling(newText);
+    setSelectedIssue(null);
+    checkGrammar(newText);
   };
 
   useEffect(() => {
@@ -107,8 +108,6 @@ export function SpellCheckerClient() {
     };
   }, []);
 
-  const incorrectResults = results.filter((r) => !r.isCorrect);
-
   return (
     <div className="flex flex-col h-screen w-screen fixed inset-0 font-[family-name:var(--font-sans)] bg-[var(--bg-primary)]">
       {/* Main Editor Area */}
@@ -118,11 +117,11 @@ export function SpellCheckerClient() {
           <div className="flex items-center gap-3">
             <Logo width={40} height={40} />
             <div className="flex flex-col md:flex-row md:gap-2 md:items-center">
-              <span className="text-xl md:text-2xl font-bold bg-gradient-to-r from-emerald-500 to-cyan-500 bg-clip-text text-transparent leading-tight">
-                বানান
+              <span className="text-xl md:text-2xl font-bold bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent leading-tight">
+                ব্যাকরণ
               </span>
-              <span className="text-[10px] font-medium text-emerald-500 uppercase tracking-wide md:bg-emerald-500/10 md:px-2 md:py-1 md:rounded-full">
-                Spell Checker
+              <span className="text-[10px] font-medium text-amber-500 uppercase tracking-wide md:bg-amber-500/10 md:px-2 md:py-1 md:rounded-full">
+                Grammar Checker
               </span>
             </div>
           </div>
@@ -136,15 +135,21 @@ export function SpellCheckerClient() {
                   </span>{" "}
                   শব্দ
                 </span>
-                {stats.incorrect > 0 && (
-                  <span className="text-sm text-red-400 flex items-center gap-1">
+                <span className="text-sm text-[var(--text-secondary)] flex items-center gap-1">
+                  <span className="font-semibold text-[var(--text-primary)] tabular-nums">
+                    {stats.pairs}
+                  </span>{" "}
+                  জোড়া
+                </span>
+                {stats.issues > 0 && (
+                  <span className="text-sm text-amber-400 flex items-center gap-1">
                     <span className="font-semibold tabular-nums">
-                      {stats.incorrect}
+                      {stats.issues}
                     </span>{" "}
-                    ভুল
+                    সংশোধন
                   </span>
                 )}
-                {stats.incorrect === 0 && (
+                {stats.issues === 0 && (
                   <span className="text-sm text-emerald-400 flex items-center gap-1">
                     <span className="font-bold">✓</span> সঠিক
                   </span>
@@ -157,11 +162,11 @@ export function SpellCheckerClient() {
               </span>
             )}
             <Link
-              href="/grammar"
-              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-amber-500 bg-amber-500/10 hover:bg-amber-500/20 rounded-full transition-colors"
+              href="/"
+              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-emerald-500 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-full transition-colors"
             >
-              <span className="max-sm:hidden">Grammar</span>
-              <span>📝</span>
+              <span className="max-sm:hidden">Spelling</span>
+              <span>✏️</span>
             </Link>
             <ThemeToggle />
           </div>
@@ -186,13 +191,15 @@ export function SpellCheckerClient() {
               const cleanedSegment = segment
                 .replace(/[।,;:'"?!()[\]{}॥]+/g, "")
                 .trim();
-              const result = results.find((r) => r.word === cleanedSegment);
-              if (result && !result.isCorrect) {
+              const result = results.find(
+                (r) => r.currentWord === cleanedSegment
+              );
+              if (result) {
                 return (
                   <span
                     key={idx}
-                    className="bg-[linear-gradient(to_bottom,transparent_92%,rgba(248,113,113,0.6)_92%)] rounded-xs pointer-events-auto cursor-pointer hover:bg-red-400/20 transition-colors"
-                    onClick={() => setSelectedWord(result)}
+                    className="bg-[linear-gradient(to_bottom,transparent_92%,rgba(251,191,36,0.6)_92%)] rounded-xs pointer-events-auto cursor-pointer hover:bg-amber-400/20 transition-colors"
+                    onClick={() => setSelectedIssue(result)}
                   >
                     {segment}
                   </span>
@@ -213,65 +220,63 @@ export function SpellCheckerClient() {
       )}
 
       {/* Suggestions Panel */}
-      {incorrectResults.length > 0 && (
+      {results.length > 0 && (
         <div className="fixed bottom-0 left-0 right-0 max-h-[40vh] bg-[var(--bg-secondary)] border-t border-[var(--border-color)] overflow-y-auto shadow-[0_-10px_40px_rgba(0,0,0,0.2)] z-40 animate-slide-up">
           <div className="flex items-center gap-3 px-6 py-4 bg-[var(--overlay-color)] border-b border-[var(--border-color)] text-base font-semibold text-[var(--text-primary)]">
-            <span className="text-xl">🔍</span>
-            <span>বানান সংশোধন প্রস্তাব</span>
-            <span className="text-xs font-medium text-blue-400 ml-auto uppercase tracking-wide">
-              Spelling Suggestions
+            <span className="text-xl">📝</span>
+            <span>ব্যাকরণ সংশোধন প্রস্তাব</span>
+            <span className="text-xs font-medium text-amber-400 ml-auto uppercase tracking-wide">
+              Grammar Suggestions
             </span>
           </div>
 
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4 p-6">
-            {incorrectResults.map((result, idx) => (
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4 p-6">
+            {results.map((result, idx) => (
               <div
                 key={idx}
-                className={`bg-[var(--overlay-color)] rounded-xl p-4 border border-[var(--border-color)] transition-all cursor-pointer hover:bg-emerald-500/5 hover:border-emerald-500/30 hover:-translate-y-0.5 ${
-                  selectedWord?.word === result.word
-                    ? "bg-emerald-500/5 border-emerald-500/30"
+                className={`bg-[var(--overlay-color)] rounded-xl p-4 border border-[var(--border-color)] transition-all cursor-pointer hover:bg-amber-500/5 hover:border-amber-500/30 hover:-translate-y-0.5 ${
+                  selectedIssue?.position === result.position
+                    ? "bg-amber-500/5 border-amber-500/30"
                     : ""
                 }`}
-                onClick={() => setSelectedWord(result)}
+                onClick={() => setSelectedIssue(result)}
               >
-                <div className="flex items-baseline gap-3 mb-3 pb-3 border-b border-[var(--border-color)]">
-                  <span className="text-xl font-semibold text-red-400">
-                    {result.word}
+                <div className="flex items-baseline gap-2 mb-3 pb-3 border-b border-[var(--border-color)]">
+                  <span className="text-base text-[var(--text-secondary)]">
+                    {result.prevWord}
                   </span>
-                  <span className="text-xs text-[var(--text-muted)] font-mono">
-                    {result.romanized}
+                  <span className="text-xl font-semibold text-amber-400">
+                    {result.currentWord}
                   </span>
-                  {result.isRareWord && (
-                    <span className="text-xs font-semibold text-amber-400 bg-amber-400/15 px-1.5 py-0.5 rounded-full ml-auto">
-                      বিরল
+                  {result.currentOccurance > 0 && (
+                    <span className="text-xs font-semibold text-[var(--text-muted)] bg-[var(--bg-primary)] px-1.5 py-0.5 rounded-full ml-auto tabular-nums">
+                      {formatOccurance(result.currentOccurance)}
                     </span>
                   )}
                 </div>
 
                 {result.suggestions.length > 0 ? (
                   <div className="flex flex-col gap-2">
-                    {result.suggestions.slice(0, 5).map((suggestion, sIdx) => (
+                    {result.suggestions.slice(0, 3).map((suggestion, sIdx) => (
                       <button
                         key={sIdx}
-                        className="flex items-center gap-3 w-full px-3 py-2.5 bg-emerald-500/5 border border-emerald-500/10 rounded-lg cursor-pointer transition-all text-left hover:bg-emerald-500/12 hover:border-emerald-500/25 hover:translate-x-1"
+                        className="flex items-center gap-3 w-full px-3 py-2.5 bg-amber-500/5 border border-amber-500/10 rounded-lg cursor-pointer transition-all text-left hover:bg-amber-500/12 hover:border-amber-500/25 hover:translate-x-1"
                         onClick={(e) => {
                           e.stopPropagation();
-                          applySuggestion(result.word, suggestion.value);
+                          applySuggestion(
+                            result.currentWord,
+                            suggestion.nextWord
+                          );
                         }}
                       >
-                        <span className="text-base font-medium text-emerald-400">
-                          {suggestion.value}
+                        <span className="text-base text-[var(--text-secondary)]">
+                          {result.prevWord}
                         </span>
-                        <span className="text-xs text-[var(--text-muted)] font-mono">
-                          {suggestion.romanized}
+                        <span className="text-base font-medium text-amber-400">
+                          {suggestion.nextWord}
                         </span>
-                        {suggestion.frequency && (
-                          <span className="text-[10px] font-semibold text-violet-400 bg-violet-400/10 px-1.5 py-0.5 rounded-full tabular-nums">
-                            {formatFrequency(suggestion.frequency)}
-                          </span>
-                        )}
-                        <span className="ml-auto text-xs font-semibold text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded-full tabular-nums">
-                          {Math.round(suggestion.similarity * 100)}%
+                        <span className="ml-auto text-xs font-semibold text-violet-400 bg-violet-400/10 px-2 py-0.5 rounded-full tabular-nums">
+                          {formatOccurance(suggestion.occurance)}
                         </span>
                       </button>
                     ))}
@@ -287,80 +292,74 @@ export function SpellCheckerClient() {
         </div>
       )}
 
-      {/* Selected Word Detail Modal */}
-      {selectedWord && (
+      {/* Selected Issue Detail Modal */}
+      {selectedIssue && (
         <div
           className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in"
-          onClick={() => setSelectedWord(null)}
+          onClick={() => setSelectedIssue(null)}
         >
           <div
             className="bg-[var(--bg-secondary)] rounded-2xl w-[90%] max-w-md max-h-[80vh] overflow-y-auto shadow-2xl border border-[var(--border-color)] animate-slide-up relative"
             onClick={(e) => e.stopPropagation()}
           >
             <button
-              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-[var(--overlay-color)] border-none rounded-full text-[var(--text-muted)] cursor-pointer transition-all hover:bg-emerald-500/10 hover:text-[var(--text-primary)]"
-              onClick={() => setSelectedWord(null)}
+              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-[var(--overlay-color)] border-none rounded-full text-[var(--text-muted)] cursor-pointer transition-all hover:bg-amber-500/10 hover:text-[var(--text-primary)]"
+              onClick={() => setSelectedIssue(null)}
             >
               ✕
             </button>
-            <div className="p-6 border-b border-[var(--border-color)] flex items-baseline gap-4">
-              <span className="text-3xl font-bold text-red-400">
-                {selectedWord.word}
-              </span>
-              <span className="text-base text-[var(--text-muted)] font-mono">
-                {selectedWord.romanized}
-              </span>
+            <div className="p-6 border-b border-[var(--border-color)]">
+              <div className="flex items-baseline gap-3">
+                <span className="text-xl text-[var(--text-secondary)]">
+                  {selectedIssue.prevWord}
+                </span>
+                <span className="text-3xl font-bold text-amber-400">
+                  {selectedIssue.currentWord}
+                </span>
+              </div>
+              <div className="mt-2 text-sm text-[var(--text-muted)]">
+                বর্তমান জোড়া ব্যবহার:{" "}
+                <span className="font-semibold text-[var(--text-secondary)] tabular-nums">
+                  {formatOccurance(selectedIssue.currentOccurance)}
+                </span>
+              </div>
             </div>
 
             <div className="p-6">
               <h4 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wide mb-4">
                 সম্ভাব্য সংশোধন
               </h4>
-              {selectedWord.suggestions.length > 0 ? (
+              {selectedIssue.suggestions.length > 0 ? (
                 <div className="flex flex-col gap-3">
-                  {selectedWord.suggestions.map((suggestion, idx) => (
+                  {selectedIssue.suggestions.map((suggestion, idx) => (
                     <button
                       key={idx}
-                      className="flex items-center justify-between p-4 bg-emerald-500/5 border border-emerald-500/10 rounded-xl cursor-pointer transition-all hover:bg-emerald-500/12 hover:border-emerald-500/25"
+                      className="flex items-center justify-between p-4 bg-amber-500/5 border border-amber-500/10 rounded-xl cursor-pointer transition-all hover:bg-amber-500/12 hover:border-amber-500/25"
                       onClick={() =>
-                        applySuggestion(selectedWord.word, suggestion.value)
+                        applySuggestion(
+                          selectedIssue.currentWord,
+                          suggestion.nextWord
+                        )
                       }
                     >
                       <div className="flex flex-col gap-1">
-                        <span className="text-xl font-semibold text-emerald-400">
-                          {suggestion.value}
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-[var(--text-muted)] font-mono">
-                            {suggestion.romanized}
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-base text-[var(--text-secondary)]">
+                            {selectedIssue.prevWord}
                           </span>
-                          {suggestion.frequency && (
-                            <span className="text-[10px] text-violet-400 bg-violet-400/10 px-1.5 py-0.5 rounded-full">
-                              {formatFrequency(suggestion.frequency)} ব্যবহার
-                            </span>
-                          )}
+                          <span className="text-xl font-semibold text-amber-400">
+                            {suggestion.nextWord}
+                          </span>
                         </div>
+                        <span className="text-xs text-[var(--text-muted)]">
+                          ব্যবহার:{" "}
+                          <span className="font-semibold text-violet-400 tabular-nums">
+                            {formatOccurance(suggestion.occurance)}
+                          </span>
+                        </span>
                       </div>
                       <div className="w-12 h-12 relative flex items-center justify-center">
-                        <svg
-                          viewBox="0 0 36 36"
-                          className="absolute w-full h-full -rotate-90"
-                        >
-                          <path
-                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="3"
-                            strokeLinecap="round"
-                            strokeDasharray={`${
-                              suggestion.similarity * 100
-                            }, 100`}
-                            className="text-emerald-400"
-                          />
-                        </svg>
-                        <span className="text-xs font-bold text-emerald-400">
-                          {Math.round(suggestion.similarity * 100)}%
-                        </span>
+                        <span className="text-2xl">→</span>
                       </div>
                     </button>
                   ))}
