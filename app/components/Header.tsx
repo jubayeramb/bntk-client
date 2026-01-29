@@ -23,6 +23,7 @@ const config = {
     navLabel: "Grammar",
     navIcon: "📝",
     navColor: "text-amber-600 bg-amber-500/10 hover:bg-amber-500/20",
+    showBeta: false,
   },
   grammar: {
     title: "ব্যাকরণ",
@@ -34,6 +35,7 @@ const config = {
     navLabel: "Spelling",
     navIcon: "✏️",
     navColor: "text-emerald-600 bg-emerald-500/10 hover:bg-emerald-500/20",
+    showBeta: true,
   },
 };
 
@@ -50,11 +52,18 @@ export function Header({ type, stats, isLoading }: HeaderProps) {
           >
             {c.title}
           </span>
-          <span
-            className={`text-[10px] font-medium ${c.badgeColor} uppercase tracking-wide ${c.badgeBg} md:px-2 md:py-1 md:rounded-full`}
-          >
-            {c.badge}
-          </span>
+          <div className="flex items-center gap-2">
+            <span
+              className={`text-[10px] font-medium ${c.badgeColor} uppercase tracking-wide ${c.badgeBg} md:px-2 md:py-1 md:rounded-full`}
+            >
+              {c.badge}
+            </span>
+            {c.showBeta && (
+              <span className="text-[10px] font-bold text-blue-600 bg-blue-500/10 px-2 py-1 rounded-full uppercase tracking-wide border border-blue-500/20">
+                Beta
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
