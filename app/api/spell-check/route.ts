@@ -1,4 +1,5 @@
 import { query } from "@/app/lib/db";
+import { normalizeBengali } from "@/app/lib/utils";
 import { NextRequest, NextResponse } from "next/server";
 
 import { tokenizeToWords } from "@bntk/tokenization";
@@ -268,14 +269,17 @@ export async function POST(request: NextRequest) {
     // Tokenize text into words using BNTK tokenization
     const allWords = tokenizeToWords(text);
 
+    // Normalize words to handle decomposed Unicode (mobile keyboards use decomposed nukta)
+    const normalizedWords = allWords.map((word) => normalizeBengali(word));
+
     // All tokenized words are Bangla (tokenizeToWords filters non-Bangla)
-    const wordInfo = allWords.map((word) => ({
+    const wordInfo = normalizedWords.map((word) => ({
       word,
       isBangla: true,
       romanized: transliterate(word, { mode: "orva" }),
     }));
 
-    const banglaWords = allWords;
+    const banglaWords = normalizedWords;
 
     // Bulk check all Bangla words
     const wordCheckResults = await checkWordsBulk(banglaWords);

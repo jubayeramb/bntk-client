@@ -1,4 +1,5 @@
 import { query } from "@/app/lib/db";
+import { normalizeBengali } from "@/app/lib/utils";
 import { NextRequest, NextResponse } from "next/server";
 
 import { tokenizeToWords } from "@bntk/tokenization";
@@ -161,7 +162,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Tokenize text into words using BNTK tokenization
-    const words = tokenizeToWords(text);
+    const rawWords = tokenizeToWords(text);
+
+    // Normalize words to handle decomposed Unicode (mobile keyboards use decomposed nukta)
+    const words = rawWords.map((word) => normalizeBengali(word));
 
     if (words.length < 2) {
       return NextResponse.json({
