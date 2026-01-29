@@ -1,0 +1,24 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: bntk-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: bngc
+      POSTGRES_PASSWORD: bngc
+      POSTGRES_DB: bngc
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # Uncomment to mount a custom init script or dump file
+      # - ./db-backup.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bngc -d bngc"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+    driver: local
