@@ -166,45 +166,49 @@ export function GrammarCheckerClient() {
       {/* Suggestions Panel */}
       {results.length > 0 && (
         <div className="fixed bottom-0 left-0 right-0 max-h-[40vh] bg-[var(--bg-secondary)] border-t border-[var(--border-color)] overflow-y-auto shadow-[0_-10px_40px_rgba(0,0,0,0.2)] z-40 animate-slide-up">
-          <div className="flex items-center gap-3 px-6 py-4 bg-[var(--overlay-color)] border-b border-[var(--border-color)] text-base font-semibold text-[var(--text-primary)]">
-            <span className="text-xl">📝</span>
-            <span>ব্যাকরণ সংশোধন প্রস্তাব</span>
-            <span className="text-xs font-medium text-amber-600 ml-auto uppercase tracking-wide">
-              Grammar Suggestions
+          <div className="flex items-center gap-2 px-4 py-2 bg-[var(--overlay-color)] border-b border-[var(--border-color)] text-sm font-semibold text-[var(--text-primary)]">
+            <span className="text-base">📝</span>
+            <span>ব্যাকরণ সংশোধন</span>
+            <span className="text-[10px] font-medium text-amber-600 ml-auto uppercase tracking-wide">
+              Suggestions
             </span>
           </div>
 
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4 p-6">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-3 p-3">
             {results.map((result, idx) => (
               <div
                 key={idx}
-                className={`bg-[var(--overlay-color)] rounded-xl p-4 border border-[var(--border-color)] transition-all cursor-pointer hover:bg-amber-500/5 hover:border-amber-500/30 hover:-translate-y-0.5 ${
+                className={`bg-[var(--overlay-color)] rounded-lg p-3 border border-[var(--border-color)] transition-all cursor-pointer hover:bg-amber-500/5 hover:border-amber-500/30 ${
                   selectedIssue?.position === result.position
                     ? "bg-amber-500/5 border-amber-500/30"
                     : ""
                 }`}
                 onClick={() => setSelectedIssue(result)}
               >
-                <div className="flex items-baseline gap-2 mb-3 pb-3 border-b border-[var(--border-color)]">
-                  <span className="text-base text-[var(--text-secondary)]">
+                <div className="flex items-baseline gap-1.5 mb-2 pb-2 border-b border-[var(--border-color)]">
+                  <span className="text-sm text-[var(--text-secondary)]">
                     {result.prevWord}
                   </span>
-                  <span className="text-xl font-semibold text-amber-600">
+                  <span className="text-base font-semibold text-amber-600">
                     {result.currentWord}
                   </span>
                   {result.currentOccurance > 0 && (
-                    <span className="text-xs font-semibold text-[var(--text-muted)] bg-[var(--bg-primary)] px-1.5 py-0.5 rounded-full ml-auto tabular-nums">
+                    <span className="text-[10px] font-semibold text-[var(--text-muted)] bg-[var(--bg-primary)] px-1.5 py-0.5 rounded-full ml-auto tabular-nums">
                       {formatCount(result.currentOccurance)}
                     </span>
                   )}
                 </div>
 
                 {result.suggestions.length > 0 ? (
-                  <div className="flex flex-col gap-2">
-                    {result.suggestions.slice(0, 3).map((suggestion, sIdx) => (
+                  <div className="flex flex-col gap-1.5">
+                    {result.suggestions.slice(0, 2).map((suggestion, sIdx) => (
                       <button
                         key={sIdx}
-                        className="flex items-center gap-3 w-full px-3 py-2.5 bg-amber-500/5 border border-amber-500/10 rounded-lg cursor-pointer transition-all text-left hover:bg-amber-500/12 hover:border-amber-500/25 hover:translate-x-1"
+                        className={`flex items-center gap-2 w-full px-2.5 py-1.5 rounded-md cursor-pointer transition-all text-left hover:translate-x-0.5 ${
+                          sIdx === 0
+                            ? "bg-emerald-500/15 border border-emerald-500/30 hover:bg-emerald-500/20 hover:border-emerald-500/40"
+                            : "bg-amber-500/5 border border-amber-500/10 hover:bg-amber-500/12 hover:border-amber-500/25"
+                        }`}
                         onClick={(e) => {
                           e.stopPropagation();
                           applySuggestion(
@@ -213,21 +217,25 @@ export function GrammarCheckerClient() {
                           );
                         }}
                       >
-                        <span className="text-base text-[var(--text-secondary)]">
+                        <span className="text-sm text-[var(--text-secondary)]">
                           {result.prevWord}
                         </span>
-                        <span className="text-base font-medium text-amber-600">
+                        <span className={`text-sm font-medium ${sIdx === 0 ? "text-emerald-500" : "text-amber-600"}`}>
                           {suggestion.nextWord}
                         </span>
-                        <span className="ml-auto text-xs font-semibold text-violet-400 bg-violet-400/10 px-2 py-0.5 rounded-full tabular-nums">
+                        <span className={`ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded-full tabular-nums ${
+                          sIdx === 0
+                            ? "text-emerald-400 bg-emerald-400/15"
+                            : "text-violet-400 bg-violet-400/10"
+                        }`}>
                           {formatCount(suggestion.occurance)}
                         </span>
                       </button>
                     ))}
                   </div>
                 ) : (
-                  <div className="text-sm text-[var(--text-muted)] text-center py-4">
-                    কোনো প্রস্তাব পাওয়া যায়নি
+                  <div className="text-xs text-[var(--text-muted)] text-center py-2">
+                    কোনো প্রস্তাব নেই
                   </div>
                 )}
               </div>
