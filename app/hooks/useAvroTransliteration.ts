@@ -8,6 +8,16 @@ const isLatinText = (text: string): boolean => {
   return /^[a-zA-Z]+$/.test(text);
 };
 
+// Extract Latin word and trailing punctuation from a string
+// e.g., "hello," -> { latinPart: "hello", punctuation: "," }
+const extractLatinAndPunctuation = (text: string): { latinPart: string; punctuation: string } | null => {
+  const match = text.match(/^([a-zA-Z]+)([।,.\-?!;:'")\]}>]*)$/);
+  if (match && match[1]) {
+    return { latinPart: match[1], punctuation: match[2] || "" };
+  }
+  return null;
+};
+
 interface UseAvroTransliterationOptions {
   text: string;
   setText: (text: string) => void;
@@ -52,12 +62,12 @@ export function useAvroTransliteration({
     (currentText: string, cursorPos: number): { newText: string; newCursorPos: number } | null => {
       const textBeforeCursor = currentText.slice(0, cursorPos);
       
-      // Find the last word before cursor
       const words = textBeforeCursor.split(/\s+/);
       const lastWord = words[words.length - 1];
 
-      // Only transliterate if the last word is Latin characters
-      if (lastWord && isLatinText(lastWord)) {
+      if (!lastWord) return null;
+
+      if (isLatinText(lastWord)) {
         const transliterated = transliterate(lastWord, { mode: "avro" });
         const textAfterCursor = currentText.slice(cursorPos);
         const textBeforeLastWord = textBeforeCursor.slice(
@@ -67,6 +77,22 @@ export function useAvroTransliteration({
 
         const newText = textBeforeLastWord + transliterated + textAfterCursor;
         const newCursorPos = textBeforeLastWord.length + transliterated.length;
+        
+        return { newText, newCursorPos };
+      }
+
+      const extracted = extractLatinAndPunctuation(lastWord);
+      if (extracted) {
+        const { latinPart, punctuation } = extracted;
+        const transliterated = transliterate(latinPart, { mode: "avro" });
+        const textAfterCursor = currentText.slice(cursorPos);
+        const textBeforeLastWord = textBeforeCursor.slice(
+          0,
+          textBeforeCursor.length - lastWord.length
+        );
+
+        const newText = textBeforeLastWord + transliterated + punctuation + textAfterCursor;
+        const newCursorPos = textBeforeLastWord.length + transliterated.length + punctuation.length;
         
         return { newText, newCursorPos };
       }
