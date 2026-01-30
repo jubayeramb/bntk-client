@@ -168,61 +168,50 @@ export function SpellCheckerClient() {
             </span>
           </div>
 
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4 p-6">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3 p-4">
             {incorrectResults.map((result, idx) => (
               <div
                 key={idx}
-                className={`bg-[var(--overlay-color)] rounded-xl p-4 border border-[var(--border-color)] transition-all cursor-pointer hover:bg-emerald-500/5 hover:border-emerald-500/30 hover:-translate-y-0.5 ${
+                className={`bg-[var(--overlay-color)] rounded-lg p-3 border border-[var(--border-color)] transition-all cursor-pointer hover:bg-emerald-500/5 hover:border-emerald-500/30 hover:-translate-y-0.5 flex flex-col min-w-0 ${
                   selectedWord?.word === result.word
                     ? "bg-emerald-500/5 border-emerald-500/30"
                     : ""
                 }`}
                 onClick={() => setSelectedWord(result)}
               >
-                <div className="flex items-baseline gap-3 mb-3 pb-3 border-b border-[var(--border-color)]">
-                  <span className="text-xl font-semibold text-red-400">
+                <div className="flex items-baseline gap-2 mb-2 pb-2 border-b border-[var(--border-color)] min-w-0">
+                  <span className="text-lg font-semibold text-red-400 break-all">
                     {result.word}
                   </span>
-                  <span className="text-xs text-[var(--text-muted)] font-mono">
+                  <span className="text-[10px] text-[var(--text-muted)] font-mono truncate flex-shrink-0">
                     {result.romanized}
                   </span>
                   {result.isRareWord && (
-                    <span className="text-xs font-semibold text-amber-600 bg-amber-600/15 px-1.5 py-0.5 rounded-full ml-auto">
+                    <span className="text-[10px] font-semibold text-amber-600 bg-amber-600/15 px-1 py-0.5 rounded-full ml-auto flex-shrink-0">
                       বিরল
                     </span>
                   )}
                 </div>
 
                 {result.suggestions.length > 0 ? (
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto scrollbar-thin">
                     {result.suggestions.slice(0, 5).map((suggestion, sIdx) => (
                       <button
                         key={sIdx}
-                        className="flex items-center gap-3 w-full px-3 py-2.5 bg-emerald-500/5 border border-emerald-500/10 rounded-lg cursor-pointer transition-all text-left hover:bg-emerald-500/12 hover:border-emerald-500/25 hover:translate-x-1"
+                        className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-500/5 border border-emerald-500/10 rounded-md cursor-pointer transition-all hover:bg-emerald-500/12 hover:border-emerald-500/25"
                         onClick={(e) => {
                           e.stopPropagation();
                           applySuggestion(result.word, suggestion.value);
                         }}
                       >
-                        <span className="text-base font-medium text-emerald-600">
+                        <span className="text-sm font-medium text-emerald-600">
                           {suggestion.value}
-                        </span>
-                        <span className="text-xs text-[var(--text-muted)] font-mono">
-                          {suggestion.romanized}
-                        </span>
-                        {suggestion.frequency && (
-                          <span className="text-[10px] font-semibold text-violet-400 bg-violet-400/10 px-1.5 py-0.5 rounded-full tabular-nums">
-                            {formatCount(suggestion.frequency)}
-                          </span>
-                        )}
-                        <span className="ml-auto text-xs font-semibold text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded-full tabular-nums">
-                          {Math.round(suggestion.similarity * 100)}%
                         </span>
                       </button>
                     ))}
                   </div>
                 ) : (
-                  <div className="text-sm text-[var(--text-muted)] text-center py-4">
+                  <div className="text-xs text-[var(--text-muted)] text-center py-2">
                     কোনো প্রস্তাব পাওয়া যায়নি
                   </div>
                 )}
